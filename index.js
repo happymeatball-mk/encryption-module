@@ -1,19 +1,20 @@
-import {Ui, Guardian, AccountManager} from './encmodule.js';
+import {Ui, Guardian, AccountManager, Logger} from './encmodule.js';
 
 const customers = [
     {
-        name: 'Pitter Black',
-        email: 'pblack@email.com',
-        password: 'pblack_123'
+        name: 'Simon Black',
+        email: 'smblack@email.com',
+        password: 'smlack_831'
     },
     {
-        name: 'Oliver White',
-        email: 'owhite@email.com',
-        password: 'owhite_456'
+        name: 'Oliver Eastwood',
+        email: 'ostwd@email.com',
+        password: 'ostwd_193'
     }
 ];
 
 const ui = new Ui(customers);
 const guardian = new Guardian();
+const logger = new Logger();
 const manager = new AccountManager();
-ui.pipe(guardian).pipe(manager);
+ui.pipe(guardian).pipe(logger).pipe(manager);

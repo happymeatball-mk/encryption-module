@@ -1,4 +1,5 @@
 import { Readable, Transform, Writable } from 'node:stream';
+import { EventEmitter } from 'node:events';
 
 const toHex = string => Buffer.from(string, 'utf8').toString('hex')
 
@@ -57,5 +58,36 @@ export class AccountManager extends Writable {
         } catch (err) {
             callback(err);
         }
+    }
+}
+
+class DB extends EventEmitter {
+    constructor() {
+        super();
+        this.data = [];
+
+        this.on('log', this.#add.bind(this));
+    }
+
+    #add(data) {
+        this.data.push({
+            source: 'db',
+            payload: data,
+            created: new Date().toString(),
+        });
+    }
+    
+}
+
+export class Logger extends Transform {
+    constructor(opts = {}) {
+        super({ objectMode: true, ...opts });
+        this.db = new DB();
+    }
+
+    _transform(chunk, encoding, callback) {
+        this.db.emit('log', chunk);
+        this.push(chunk);
+        callback();
     }
 }
