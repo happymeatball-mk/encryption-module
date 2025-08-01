@@ -44,6 +44,26 @@ export class Guardian extends Transform {
     }
 }
 
+export class Decryptor extends Transform {
+    constructor(opts = {}) {
+        super({ objectMode: true, ...opts });
+    }
+
+    _transform(chunk, encoding, callback) {
+        try {
+            const decrypted = {
+                ...chunk.payload,
+                email: chunk.payload.email ? Buffer.from(chunk.payload.email, 'hex').toString('utf8') : undefined,
+                password: chunk.payload.password ? Buffer.from(chunk.payload.password, 'hex').toString('utf8') : undefined,
+            };
+            this.push(decrypted);
+            callback();
+        } catch (err) {
+            callback(err);
+        }
+    }
+}
+
 export class AccountManager extends Writable {
     constructor(opts = {}) {
         super({ objectMode: true, ...opts });
