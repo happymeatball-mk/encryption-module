@@ -1,4 +1,4 @@
-import {Ui, Guardian, AccountManager, Logger} from './encmodule.js';
+import { Ui, Guardian, AccountManager, Logger, Decryptor } from './encmodule.js';
 
 const customers = [
     {
@@ -15,6 +15,8 @@ const customers = [
 
 const ui = new Ui(customers);
 const guardian = new Guardian();
-const logger = new Logger();
+const logger1 = new Logger();
 const manager = new AccountManager();
-ui.pipe(guardian).pipe(logger).pipe(manager);
+const decrypt = new Decryptor();
+
+ui.pipe(guardian).pipe(logger1).pipe(decrypt).pipe(manager);

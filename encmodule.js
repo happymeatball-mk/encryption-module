@@ -1,7 +1,23 @@
 import { Readable, Transform, Writable } from 'node:stream';
 import { EventEmitter } from 'node:events';
+import { createCipheriv, createDecipheriv } from 'node:crypto';
 
-const toHex = string => Buffer.from(string, 'utf8').toString('hex')
+const key = Buffer.from('12345678901234567890123456789012'); 
+const iv = Buffer.from('1234567890123456');
+
+function encrypt(data) {
+    const cipher = createCipheriv('aes-256-cbc', key, iv);
+    let encrypted = cipher.update(data, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return encrypted;
+}
+
+function decrypt(data) {
+    const decipher = createDecipheriv('aes-256-cbc', key, iv);
+    let decrypted = decipher.update(data, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
 
 export class Ui extends Readable {
     constructor(data, opts = {}) {
@@ -31,8 +47,8 @@ export class Guardian extends Transform {
                 meta: { source: 'ui' },
                 payload: {
                     ...rest,
-                    email:    email    ? toHex(email) : undefined,
-                    password: password ? toHex(password) : undefined,
+                    email:    email    ? encrypt(email) : undefined,
+                    password: password ? encrypt(password) : undefined,
                 },
             };
 
@@ -53,8 +69,8 @@ export class Decryptor extends Transform {
         try {
             const decrypted = {
                 ...chunk.payload,
-                email: chunk.payload.email ? Buffer.from(chunk.payload.email, 'hex').toString('utf8') : undefined,
-                password: chunk.payload.password ? Buffer.from(chunk.payload.password, 'hex').toString('utf8') : undefined,
+                email: chunk.payload.email ? decrypt(chunk.payload.email) : undefined,
+                password: chunk.payload.password ? decrypt(chunk.payload.password) : undefined,
             };
             this.push(decrypted);
             callback();
@@ -73,7 +89,7 @@ export class AccountManager extends Writable {
     _write(chunk, encoding, callback) {
         try {
             this.accounts.push(chunk);
-            console.log(chunk.payload);
+            console.log(chunk);
             callback();
         } catch (err) {
             callback(err);
@@ -85,7 +101,6 @@ class DB extends EventEmitter {
     constructor() {
         super();
         this.data = [];
-
         this.on('log', this.#add.bind(this));
     }
 
@@ -96,7 +111,6 @@ class DB extends EventEmitter {
             created: new Date().toString(),
         });
     }
-    
 }
 
 export class Logger extends Transform {
@@ -111,3 +125,4 @@ export class Logger extends Transform {
         callback();
     }
 }
+
