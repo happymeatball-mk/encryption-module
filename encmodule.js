@@ -43,15 +43,17 @@ export class Guardian extends Transform {
         try {
             const { email, password, ...rest } = chunk;
 
+            if (email !== 'string') {throw new Error ("Wrong email type");}
+            if (password !== 'string') {throw new Error ("Wrong password type");}
+
             const secured = {
                 meta: { source: 'ui' },
                 payload: {
                     ...rest,
-                    email:    email    ? encrypt(email) : undefined,
-                    password: password ? encrypt(password) : undefined,
+                    email:    email    ? encrypt(email) : () => {throw new Error("Missing email")},
+                    password: password ? encrypt(password) : () => {throw new Error("Missing password")},
                 },
             };
-
             this.push(secured);
             callback();
         } catch (err) {
@@ -64,7 +66,6 @@ export class Decryptor extends Transform {
     constructor(opts = {}) {
         super({ objectMode: true, ...opts });
     }
-
     _transform(chunk, encoding, callback) {
         try {
             const decrypted = {
@@ -85,7 +86,6 @@ export class AccountManager extends Writable {
         super({ objectMode: true, ...opts });
         this.accounts = [];
     }
-
     _write(chunk, encoding, callback) {
         try {
             this.accounts.push(chunk);
@@ -103,7 +103,6 @@ class DB extends EventEmitter {
         this.data = [];
         this.on('log', this.#add.bind(this));
     }
-
     #add(data) {
         this.data.push({
             source: 'db',
@@ -118,7 +117,6 @@ export class Logger extends Transform {
         super({ objectMode: true, ...opts });
         this.db = new DB();
     }
-
     _transform(chunk, encoding, callback) {
         this.db.emit('log', chunk);
         this.push(chunk);
