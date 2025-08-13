@@ -19,4 +19,4 @@ const logger1 = new Logger();
 const manager = new AccountManager();
 const decrypt = new Decryptor();
 
-ui.pipe(guardian).pipe(logger1).pipe(decrypt).pipe(manager);
+ui.pipe(guardian).pipe(logger1).pipe(manager);
