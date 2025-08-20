@@ -43,12 +43,12 @@ export class Guardian extends Transform {
         try {
             const { email, password, ...rest } = chunk;
 
-            if (typeof email       !== 'string')   {throw new Error("Wrong email type")};
-            if (typeof password    !== 'string')   {throw new Error("Wrong password type")};
-            if (rest               === '')         {throw new Error("Missing name")};
-            if (email              === '')         {throw new Error("Missing email")};
-            if (password           === '')         {throw new Error("Missing password")};
-
+            if (!rest)                          {throw new Error("Missing name")};
+            if (!email)                         {throw new Error("Missing email")};
+            if (!password)                      {throw new Error("Missing password")};
+            if (typeof email    !== 'string')   {throw new Error("Wrong email type")};
+            if (typeof password !== 'string')   {throw new Error("Wrong password type")};
+            
             const secured = {
                 meta: { source: 'ui' },
                 payload: {
