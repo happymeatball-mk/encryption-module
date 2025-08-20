@@ -1,7 +1,23 @@
 import { Readable, Transform, Writable } from 'node:stream';
 import { EventEmitter } from 'node:events';
+import { createCipheriv, createDecipheriv } from 'node:crypto';
 
-const toHex = string => Buffer.from(string, 'utf8').toString('hex')
+const key = Buffer.from('12345678901234567890123456789012'); 
+const iv = Buffer.from('1234567890123456');
+
+function encrypt(data) {
+    const cipher = createCipheriv('aes-256-cbc', key, iv);
+    let encrypted = cipher.update(data, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return encrypted;
+}
+
+function decrypt(data) {
+    const decipher = createDecipheriv('aes-256-cbc', key, iv);
+    let decrypted = decipher.update(data, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
 
 export class Ui extends Readable {
     constructor(data, opts = {}) {
@@ -27,15 +43,20 @@ export class Guardian extends Transform {
         try {
             const { email, password, ...rest } = chunk;
 
+            if (!rest)                          {throw new Error("Missing name")};
+            if (!email)                         {throw new Error("Missing email")};
+            if (!password)                      {throw new Error("Missing password")};
+            if (typeof email    !== 'string')   {throw new Error("Wrong email type")};
+            if (typeof password !== 'string')   {throw new Error("Wrong password type")};
+            
             const secured = {
                 meta: { source: 'ui' },
                 payload: {
                     ...rest,
-                    email:    email    ? toHex(email) : undefined,
-                    password: password ? toHex(password) : undefined,
+                    email:    encrypt(email),
+                    password: encrypt(password),
                 },
             };
-
             this.push(secured);
             callback();
         } catch (err) {
@@ -48,13 +69,12 @@ export class Decryptor extends Transform {
     constructor(opts = {}) {
         super({ objectMode: true, ...opts });
     }
-
     _transform(chunk, encoding, callback) {
         try {
             const decrypted = {
                 ...chunk.payload,
-                email: chunk.payload.email ? Buffer.from(chunk.payload.email, 'hex').toString('utf8') : undefined,
-                password: chunk.payload.password ? Buffer.from(chunk.payload.password, 'hex').toString('utf8') : undefined,
+                email:      decrypt(chunk.payload.email),
+                password:   decrypt(chunk.payload.password),
             };
             this.push(decrypted);
             callback();
@@ -69,11 +89,9 @@ export class AccountManager extends Writable {
         super({ objectMode: true, ...opts });
         this.accounts = [];
     }
-
     _write(chunk, encoding, callback) {
         try {
             this.accounts.push(chunk);
-            console.log(chunk.payload);
             callback();
         } catch (err) {
             callback(err);
@@ -85,10 +103,8 @@ class DB extends EventEmitter {
     constructor() {
         super();
         this.data = [];
-
         this.on('log', this.#add.bind(this));
     }
-
     #add(data) {
         this.data.push({
             source: 'db',
@@ -96,7 +112,6 @@ class DB extends EventEmitter {
             created: new Date().toString(),
         });
     }
-    
 }
 
 export class Logger extends Transform {
@@ -104,10 +119,10 @@ export class Logger extends Transform {
         super({ objectMode: true, ...opts });
         this.db = new DB();
     }
-
     _transform(chunk, encoding, callback) {
         this.db.emit('log', chunk);
         this.push(chunk);
         callback();
     }
 }
+
