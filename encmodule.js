@@ -53,8 +53,8 @@ export class Guardian extends Transform {
                 meta: { source: 'ui' },
                 payload: {
                     ...rest,
-                    email:    email    ? encrypt(email)    : undefined,
-                    password: password ? encrypt(password) : undefined,
+                    email:    encrypt(email),
+                    password: encrypt(password),
                 },
             };
             this.push(secured);
@@ -73,8 +73,8 @@ export class Decryptor extends Transform {
         try {
             const decrypted = {
                 ...chunk.payload,
-                email: chunk.payload.email ? decrypt(chunk.payload.email) : undefined,
-                password: chunk.payload.password ? decrypt(chunk.payload.password) : undefined,
+                email:      decrypt(chunk.payload.email),
+                password:   decrypt(chunk.payload.password),
             };
             this.push(decrypted);
             callback();
@@ -92,7 +92,6 @@ export class AccountManager extends Writable {
     _write(chunk, encoding, callback) {
         try {
             this.accounts.push(chunk);
-            console.log(chunk);
             callback();
         } catch (err) {
             callback(err);
